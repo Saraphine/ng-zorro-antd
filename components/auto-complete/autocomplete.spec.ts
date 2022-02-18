@@ -3,6 +3,7 @@ import { DOWN_ARROW, ENTER, ESCAPE, TAB, UP_ARROW } from '@angular/cdk/keycodes'
 import { OverlayContainer } from '@angular/cdk/overlay';
 import { ScrollDispatcher } from '@angular/cdk/scrolling';
 import {
+  ApplicationRef,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
@@ -250,6 +251,25 @@ describe('auto-complete', () => {
       fixture.detectChanges();
 
       expect(panel.classList).toContain('ant-select-dropdown-hidden');
+    }));
+
+    it('should not run change detection on `mouseenter` and `mousedown` events for `nz-auto-option`', fakeAsync(() => {
+      dispatchFakeEvent(input, 'focusin');
+      fixture.detectChanges();
+      flush();
+
+      const appRef = TestBed.inject(ApplicationRef);
+      spyOn(appRef, 'tick');
+
+      const option = overlayContainerElement.querySelector('nz-auto-option') as HTMLElement;
+      const event = new MouseEvent('mousedown');
+      spyOn(event, 'preventDefault');
+
+      option.dispatchEvent(event);
+      option.dispatchEvent(new MouseEvent('mouseenter'));
+
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(appRef.tick).not.toHaveBeenCalled();
     }));
   });
 
@@ -1145,7 +1165,7 @@ class NzTestAutocompleteWithObjectOptionComponent {
   @ViewChild(NzAutocompleteTriggerDirective) trigger!: NzAutocompleteTriggerDirective;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  compareFun = (o1: any, o2: any) => {
+  compareFun = (o1: any, o2: any): boolean => {
     if (o1) {
       return typeof o1 === 'string' ? o1 === o2.label : o1.value === o2.value;
     } else {

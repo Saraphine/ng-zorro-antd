@@ -24,6 +24,7 @@ import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 
 | 参数 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `[nzPopconfirmArrowPointAtCenter]` | 箭头指向锚点的中心 | `boolean` | `false` |
 | `[nzPopconfirmTitle]` | 确认框的描述 | `string \| TemplateRef<void>` | - |
 | `[nzPopconfirmTrigger]` | 触发行为，为 `null` 时不响应光标事件 | `'click' \| 'focus' \| 'hover' \| null` | `'hover'` |
 | `[nzPopconfirmPlacement]` | 气泡框位置 | `'top' \| 'left' \| 'right' \| 'bottom' \| 'topLeft' \| 'topRight' \| 'bottomLeft' \| 'bottomRight' \| 'leftTop' \| 'leftBottom' \| 'rightTop' \| 'rightBottom' \| Array<string>` | `'top'` |
@@ -45,6 +46,7 @@ import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 | `[nzCancelText]` | 取消按钮文字 | `string` | `'取消'` | - |
 | `[nzOkText]` | 确认按钮文字 | `string` | `'确定'` | - |
 | `[nzOkType]` | 确认按钮类型 | `'primary' \| 'ghost' \| 'dashed' \| 'danger' \| 'default'` | `'primary'` | - |
+| `[nzOkDanger]` | 确认按钮是否为危险按钮。<i>与 `nz-button` 的 `nzDanger` 值保持一致</i> | `boolean` | `false` | - |
 | `[nzCondition]` | 是否直接触发 `nzOnConfirm` 而不弹出框 | `boolean` | `false` | - |
 | `[nzIcon]` | 自定义弹出框的 icon  | `string \| TemplateRef<void>` | - | - |
 | `[nzAutoFocus]` | 按钮的自动聚焦 | `null \| 'ok' \| 'cancel'` | `null` | ✅ |

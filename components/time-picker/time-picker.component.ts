@@ -52,6 +52,7 @@ const NZ_CONFIG_MODULE_NAME: NzConfigKey = 'timePicker';
         [attr.id]="nzId"
         type="text"
         [size]="inputSize"
+        autocomplete="off"
         [placeholder]="nzPlaceHolder || (i18nPlaceHolder$ | async)"
         [(ngModel)]="inputValue"
         [disabled]="nzDisabled"
@@ -78,12 +79,11 @@ const NZ_CONFIG_MODULE_NAME: NzConfigKey = 'timePicker';
       [cdkConnectedOverlayPositions]="overlayPositions"
       [cdkConnectedOverlayOrigin]="origin"
       [cdkConnectedOverlayOpen]="nzOpen"
-      [cdkConnectedOverlayOffsetY]="-2"
       [cdkConnectedOverlayTransformOriginOn]="'.ant-picker-dropdown'"
       (detach)="close()"
       (overlayOutsideClick)="onClickOutside($event)"
     >
-      <div [@slideMotion]="'enter'" class="ant-picker-dropdown">
+      <div [@slideMotion]="'enter'" class="ant-picker-dropdown" style="position: relative">
         <div class="ant-picker-panel-container">
           <div tabindex="-1" class="ant-picker-panel">
             <nz-time-picker-panel
@@ -114,6 +114,7 @@ const NZ_CONFIG_MODULE_NAME: NzConfigKey = 'timePicker';
     </ng-template>
   `,
   host: {
+    class: 'ant-picker',
     '[class.ant-picker-large]': `nzSize === 'large'`,
     '[class.ant-picker-small]': `nzSize === 'small'`,
     '[class.ant-picker-disabled]': `nzDisabled`,
@@ -146,13 +147,34 @@ export class NzTimePickerComponent implements ControlValueAccessor, OnInit, Afte
   i18nPlaceHolder$: Observable<string | undefined> = of(undefined);
   overlayPositions: ConnectionPositionPair[] = [
     {
+      offsetY: 3,
       originX: 'start',
       originY: 'bottom',
       overlayX: 'start',
-      overlayY: 'top',
-      offsetY: 3
+      overlayY: 'top'
+    },
+    {
+      offsetY: -3,
+      originX: 'start',
+      originY: 'top',
+      overlayX: 'start',
+      overlayY: 'bottom'
+    },
+    {
+      offsetY: 3,
+      originX: 'end',
+      originY: 'bottom',
+      overlayX: 'end',
+      overlayY: 'top'
+    },
+    {
+      offsetY: -3,
+      originX: 'end',
+      originY: 'top',
+      overlayX: 'end',
+      overlayY: 'bottom'
     }
-  ];
+  ] as ConnectionPositionPair[];
   dir: Direction = 'ltr';
 
   @ViewChild('inputElement', { static: true }) inputRef!: ElementRef<HTMLInputElement>;
@@ -302,12 +324,8 @@ export class NzTimePickerComponent implements ControlValueAccessor, OnInit, Afte
     private cdr: ChangeDetectorRef,
     private dateHelper: DateHelperService,
     private platform: Platform,
-    private elementRef: ElementRef,
     @Optional() private directionality: Directionality
-  ) {
-    // TODO: move to host after View Engine deprecation
-    this.elementRef.nativeElement.classList.add('ant-picker');
-  }
+  ) {}
 
   ngOnInit(): void {
     this.inputSize = Math.max(8, this.nzFormat.length) + 2;

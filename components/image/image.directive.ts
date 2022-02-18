@@ -17,7 +17,7 @@ import {
   Optional,
   SimpleChanges
 } from '@angular/core';
-import { Subject } from 'rxjs';
+import { fromEvent, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { NzConfigKey, NzConfigService, WithConfig } from 'ng-zorro-antd/core/config';
@@ -51,7 +51,8 @@ export class NzImageDirective implements OnInit, OnChanges, OnDestroy {
 
   dir?: Direction;
   backLoadImage!: HTMLImageElement;
-  private status: ImageStatusType = 'normal';
+  status: ImageStatusType = 'normal';
+  private backLoadDestroy$: Subject<void> = new Subject();
   private destroy$: Subject<void> = new Subject();
 
   get previewable(): boolean {
@@ -129,6 +130,10 @@ export class NzImageDirective implements OnInit, OnChanges, OnDestroy {
     this.backLoadImage.srcset = this.nzSrcset;
     this.status = 'loading';
 
+    // unsubscribe last backLoad
+    this.backLoadDestroy$.next();
+    this.backLoadDestroy$.complete();
+    this.backLoadDestroy$ = new Subject();
     if (this.backLoadImage.complete) {
       this.status = 'normal';
       this.getElement().nativeElement.src = this.nzSrc;
@@ -142,19 +147,25 @@ export class NzImageDirective implements OnInit, OnChanges, OnDestroy {
         this.getElement().nativeElement.srcset = this.nzSrcset;
       }
 
-      this.backLoadImage.onload = () => {
-        this.status = 'normal';
-        this.getElement().nativeElement.src = this.nzSrc;
-        this.getElement().nativeElement.srcset = this.nzSrcset;
-      };
+      // The `nz-image` directive can be destroyed before the `load` or `error` event is dispatched,
+      // so there's no sense to keep capturing `this`.
+      fromEvent(this.backLoadImage, 'load')
+        .pipe(takeUntil(this.backLoadDestroy$), takeUntil(this.destroy$))
+        .subscribe(() => {
+          this.status = 'normal';
+          this.getElement().nativeElement.src = this.nzSrc;
+          this.getElement().nativeElement.srcset = this.nzSrcset;
+        });
 
-      this.backLoadImage.onerror = () => {
-        this.status = 'error';
-        if (this.nzFallback) {
-          this.getElement().nativeElement.src = this.nzFallback;
-          this.getElement().nativeElement.srcset = '';
-        }
-      };
+      fromEvent(this.backLoadImage, 'error')
+        .pipe(takeUntil(this.backLoadDestroy$), takeUntil(this.destroy$))
+        .subscribe(() => {
+          this.status = 'error';
+          if (this.nzFallback) {
+            this.getElement().nativeElement.src = this.nzFallback;
+            this.getElement().nativeElement.srcset = '';
+          }
+        });
     }
   }
 }

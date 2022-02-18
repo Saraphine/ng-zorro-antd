@@ -13,6 +13,7 @@ import {
   ContentChild,
   ElementRef,
   Input,
+  NgZone,
   OnChanges,
   OnDestroy,
   OnInit,
@@ -21,7 +22,7 @@ import {
   SimpleChanges,
   ViewEncapsulation
 } from '@angular/core';
-import { Subject } from 'rxjs';
+import { fromEvent, Subject } from 'rxjs';
 import { filter, startWith, takeUntil } from 'rxjs/operators';
 
 import { NzConfigKey, NzConfigService, WithConfig } from 'ng-zorro-antd/core/config';
@@ -46,6 +47,7 @@ const NZ_CONFIG_MODULE_NAME: NzConfigKey = 'button';
     <ng-content></ng-content>
   `,
   host: {
+    class: 'ant-btn',
     '[class.ant-btn-primary]': `nzType === 'primary'`,
     '[class.ant-btn-dashed]': `nzType === 'dashed'`,
     '[class.ant-btn-link]': `nzType === 'link'`,
@@ -61,8 +63,7 @@ const NZ_CONFIG_MODULE_NAME: NzConfigKey = 'button';
     '[class.ant-input-search-button]': `nzSearch`,
     '[class.ant-btn-rtl]': `dir === 'rtl'`,
     '[attr.tabindex]': 'disabled ? -1 : (tabIndex === null ? null : tabIndex)',
-    '[attr.disabled]': 'disabled || null',
-    '(click)': 'haltDisabledEvents($event)'
+    '[attr.disabled]': 'disabled || null'
   }
 })
 export class NzButtonComponent implements OnDestroy, OnChanges, AfterViewInit, AfterContentInit, OnInit {
@@ -89,13 +90,6 @@ export class NzButtonComponent implements OnDestroy, OnChanges, AfterViewInit, A
   private destroy$ = new Subject<void>();
   private loading$ = new Subject<boolean>();
 
-  haltDisabledEvents(event: MouseEvent): void {
-    if (this.disabled && (event.target as HTMLElement)?.tagName === 'A') {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-    }
-  }
-
   insertSpan(nodes: NodeList, renderer: Renderer2): void {
     nodes.forEach(node => {
       if (node.nodeName === '#text') {
@@ -119,14 +113,13 @@ export class NzButtonComponent implements OnDestroy, OnChanges, AfterViewInit, A
   }
 
   constructor(
+    private ngZone: NgZone,
     private elementRef: ElementRef,
     private cdr: ChangeDetectorRef,
     private renderer: Renderer2,
     public nzConfigService: NzConfigService,
     @Optional() private directionality: Directionality
   ) {
-    // TODO: move to host after View Engine deprecation
-    this.elementRef.nativeElement.classList.add('ant-btn');
     this.nzConfigService
       .getConfigChangeEventForComponent(NZ_CONFIG_MODULE_NAME)
       .pipe(takeUntil(this.destroy$))
@@ -142,6 +135,21 @@ export class NzButtonComponent implements OnDestroy, OnChanges, AfterViewInit, A
     });
 
     this.dir = this.directionality.value;
+
+    this.ngZone.runOutsideAngular(() => {
+      // Caretaker note: this event listener could've been added through `host.click` or `HostListener`.
+      // The compiler generates the `ɵɵlistener` instruction which wraps the actual listener internally into the
+      // function, which runs `markDirty()` before running the actual listener (the decorated class method).
+      // Since we're preventing the default behavior and stopping event propagation this doesn't require Angular to run the change detection.
+      fromEvent<MouseEvent>(this.elementRef.nativeElement, 'click')
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(event => {
+          if (this.disabled && (event.target as HTMLElement)?.tagName === 'A') {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        });
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {

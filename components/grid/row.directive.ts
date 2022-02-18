@@ -32,6 +32,7 @@ export type NzAlign = 'top' | 'middle' | 'bottom';
   selector: '[nz-row],nz-row,nz-form-item',
   exportAs: 'nzRow',
   host: {
+    class: 'ant-row',
     '[class.ant-row-top]': `nzAlign === 'top'`,
     '[class.ant-row-middle]': `nzAlign === 'middle'`,
     '[class.ant-row-bottom]': `nzAlign === 'bottom'`,
@@ -77,7 +78,7 @@ export class NzRowDirective implements OnInit, OnChanges, AfterViewInit, OnDestr
   setGutterStyle(): void {
     const [horizontalGutter, verticalGutter] = this.getGutter();
     this.actualGutter$.next([horizontalGutter, verticalGutter]);
-    const renderGutter = (name: string, gutter: number | null) => {
+    const renderGutter = (name: string, gutter: number | null): void => {
       const nativeElement = this.elementRef.nativeElement;
       if (gutter !== null) {
         this.renderer.setStyle(nativeElement, name, `-${gutter / 2}px`);
@@ -96,10 +97,7 @@ export class NzRowDirective implements OnInit, OnChanges, AfterViewInit, OnDestr
     public platform: Platform,
     private breakpointService: NzBreakpointService,
     @Optional() private directionality: Directionality
-  ) {
-    // TODO: move to host after View Engine deprecation
-    this.elementRef.nativeElement.classList.add('ant-row');
-  }
+  ) {}
 
   ngOnInit(): void {
     this.dir = this.directionality.value;

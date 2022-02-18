@@ -1,4 +1,4 @@
-import { Component, DebugElement, NO_ERRORS_SCHEMA, ViewChild, ViewEncapsulation } from '@angular/core';
+import { ApplicationRef, Component, DebugElement, NO_ERRORS_SCHEMA, ViewChild, ViewEncapsulation } from '@angular/core';
 import { ComponentFixture, fakeAsync, flush, TestBed, tick, waitForAsync } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { By } from '@angular/platform-browser';
@@ -84,6 +84,18 @@ describe('time-picker-panel', () => {
     //   expect(listOfSelectedLi[1].innerText).toBe('09');
     //   expect(listOfSelectedLi[2].innerText).toBe('10');
     // }));
+    it('should select default open value on list click', fakeAsync(() => {
+      let listOfSelectedLi = panelElement.nativeElement.querySelectorAll('.ant-picker-time-panel-cell-selected');
+      expect(listOfSelectedLi[0].innerText).toBe('10');
+      expect(listOfSelectedLi[1].innerText).toBe('11');
+      expect(listOfSelectedLi[2].innerText).toBe('12');
+      expect(testComponent.value).toBeUndefined();
+      dispatchFakeEvent(listOfSelectedLi[0], 'click');
+      fixture.detectChanges();
+      flush();
+      fixture.detectChanges();
+      expect(testComponent.value).not.toBeUndefined();
+    }));
     it('should select scroll work', fakeAsync(() => {
       testComponent.value = new Date(0, 0, 0, 8, 9, 10);
       fixture.detectChanges();
@@ -146,6 +158,21 @@ describe('time-picker-panel', () => {
       const listOfSelectedLi = panelElement.nativeElement.querySelector('.ant-picker-time-panel-cell-selected');
       expect(listOfSelectedLi.offsetTop).toBe(0);
     }));
+
+    describe('change detection behavior', () => {
+      it('should not run change detection when the timer picker panel is clicked', () => {
+        const appRef = TestBed.inject(ApplicationRef);
+        const event = new MouseEvent('mousedown');
+
+        spyOn(appRef, 'tick');
+        spyOn(event, 'preventDefault').and.callThrough();
+
+        fixture.nativeElement.querySelector('nz-time-picker-panel').dispatchEvent(event);
+
+        expect(appRef.tick).not.toHaveBeenCalled();
+        expect(event.preventDefault).toHaveBeenCalled();
+      });
+    });
   });
   describe('disabled time-picker-panel', () => {
     let fixture: ComponentFixture<NzTestTimePanelDisabledComponent>;
@@ -332,7 +359,7 @@ describe('time-picker-panel', () => {
       [nzHourStep]="hourStep"
     ></nz-time-picker-panel>
   `,
-  styleUrls: ['../style/index.less', './style/index.less']
+  styleUrls: ['../ng-zorro-antd.less']
 })
 export class NzTestTimePanelComponent {
   secondStep = 1;
@@ -361,7 +388,7 @@ export class NzTestTimePanelComponent {
       [nzHourStep]="hourStep"
     ></nz-time-picker-panel>
   `,
-  styleUrls: ['../style/index.less', './style/index.less']
+  styleUrls: ['../ng-zorro-antd.less']
 })
 export class NzTestTimePanelDisabledComponent {
   inDatePicker = false;
@@ -405,7 +432,7 @@ export class NzTestTimePanelDisabledComponent {
       [format]="format"
     ></nz-time-picker-panel>
   `,
-  styleUrls: ['../style/index.less', './style/index.less']
+  styleUrls: ['../ng-zorro-antd.less']
 })
 export class NzTest12HourTimePanelComponent {
   @ViewChild(NzTimePickerPanelComponent, { static: false }) nzTimePickerPanelComponent!: NzTimePickerPanelComponent;
@@ -426,7 +453,7 @@ export class NzTest12HourTimePanelComponent {
       [nzDisabledSeconds]="disabledSeconds"
     ></nz-time-picker-panel>
   `,
-  styleUrls: ['../style/index.less', './style/index.less']
+  styleUrls: ['../ng-zorro-antd.less']
 })
 export class NzTest12HourTimePanelDisabeledComponent {
   @ViewChild(NzTimePickerPanelComponent, { static: false }) nzTimePickerPanelComponent!: NzTimePickerPanelComponent;

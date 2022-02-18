@@ -134,11 +134,11 @@ describe('nz-tooltip', () => {
       const title = 'focus';
       const triggerElement = component.focusTemplate.nativeElement;
 
-      dispatchMouseEvent(triggerElement, 'focus');
+      dispatchMouseEvent(triggerElement, 'focusin');
       waitingForTooltipToggling();
       expect(overlayContainerElement.textContent).toContain(title);
 
-      dispatchMouseEvent(triggerElement, 'blur');
+      dispatchMouseEvent(triggerElement, 'focusout');
       waitingForTooltipToggling();
       expect(overlayContainerElement.textContent).not.toContain(title);
     }));
@@ -331,7 +331,27 @@ describe('origin', () => {
   }));
 
   it('should target work', () => {
-    expect((component.tooltip!.component!.origin!.elementRef.nativeElement as HTMLElement).tagName).toBe('BUTTON');
+    expect((component.tooltip!.component!.origin!.nativeElement as HTMLElement).tagName).toBe('BUTTON');
+  });
+});
+
+describe('arrow', () => {
+  let testBed: ComponentBed<NzTestTooltipArrowComponent>;
+  let component: NzTestTooltipArrowComponent;
+
+  beforeEach(fakeAsync(() => {
+    testBed = createComponentBed(NzTestTooltipArrowComponent, {
+      imports: [NzToolTipModule, NoopAnimationsModule, NzIconTestModule, NzElementPatchModule]
+    });
+    component = testBed.component;
+  }));
+
+  it('should support arrow pointing at center', () => {
+    const overlayElement = getOverlayElementForTooltip(component.tooltipDirective);
+
+    expect(overlayElement.querySelector('.ant-tooltip-arrow')).toBeTruthy();
+    // just read style.transform wouldn't get us the correct result
+    expect(overlayElement.parentElement!.innerHTML).toContain('transform: translateX');
   });
 });
 
@@ -436,4 +456,20 @@ export class NzTooltipTestComponent {
 })
 export class NzTestTooltipTargetComponent {
   @ViewChild(NzTooltipDirective) tooltip?: NzTooltipDirective;
+}
+
+@Component({
+  template: ` <a
+    #titleString
+    nz-tooltip
+    [nzTooltipVisible]="true"
+    nzTooltipTitle="Title"
+    nzTooltipPlacement="bottomLeft"
+    [nzTooltipArrowPointAtCenter]="true"
+  >
+    Tooltip
+  </a>`
+})
+export class NzTestTooltipArrowComponent {
+  @ViewChild('titleString', { static: false, read: NzTooltipDirective }) tooltipDirective!: NzTooltipDirective;
 }

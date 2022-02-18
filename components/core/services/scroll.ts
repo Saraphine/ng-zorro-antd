@@ -4,7 +4,7 @@
  */
 
 import { DOCUMENT } from '@angular/common';
-import { Inject, Injectable } from '@angular/core';
+import { Inject, Injectable, NgZone } from '@angular/core';
 
 import { reqAnimFrame } from 'ng-zorro-antd/core/polyfill';
 import { NzSafeAny } from 'ng-zorro-antd/core/types';
@@ -36,7 +36,7 @@ export interface NzScrollToOptions {
 export class NzScrollService {
   private doc: Document;
 
-  constructor(@Inject(DOCUMENT) doc: NzSafeAny) {
+  constructor(private ngZone: NgZone, @Inject(DOCUMENT) doc: NzSafeAny) {
     this.doc = doc;
   }
 
@@ -113,7 +113,7 @@ export class NzScrollService {
     const scrollTop = this.getScroll(target);
     const startTime = Date.now();
     const { easing, callback, duration = 450 } = options;
-    const frameFunc = () => {
+    const frameFunc = (): void => {
       const timestamp = Date.now();
       const time = timestamp - startTime;
       const nextScrollTop = (easing || easeInOutCubic)(time > duration ? duration : time, scrollTop, y, duration);
@@ -127,9 +127,13 @@ export class NzScrollService {
       if (time < duration) {
         reqAnimFrame(frameFunc);
       } else if (typeof callback === 'function') {
-        callback();
+        // Caretaker note: the `frameFunc` is called within the `<root>` zone, but we have to re-enter
+        // the Angular zone when calling custom callback to be backwards-compatible.
+        this.ngZone.run(callback);
       }
     };
-    reqAnimFrame(frameFunc);
+    // Caretaker note: the `requestAnimationFrame` triggers change detection, but updating a `scrollTop` property or
+    // calling `window.scrollTo` doesn't require Angular to run `ApplicationRef.tick()`.
+    this.ngZone.runOutsideAngular(() => reqAnimFrame(frameFunc));
   }
 }

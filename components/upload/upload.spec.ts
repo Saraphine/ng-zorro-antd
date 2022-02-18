@@ -1,7 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { ENTER, TAB } from '@angular/cdk/keycodes';
 import { CommonModule } from '@angular/common';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { Component, DebugElement, Injector, TemplateRef, ViewChild, ViewEncapsulation } from '@angular/core';
+import {
+  ApplicationRef,
+  Component,
+  DebugElement,
+  Injector,
+  TemplateRef,
+  ViewChild,
+  ViewEncapsulation
+} from '@angular/core';
 import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { By } from '@angular/platform-browser';
@@ -9,6 +18,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Observable, Observer, of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 
+import { dispatchKeyboardEvent } from 'ng-zorro-antd/core/testing';
 import { NzI18nModule, NzI18nService } from 'ng-zorro-antd/i18n';
 import { NzIconTestModule } from 'ng-zorro-antd/icon/testing';
 import { NzProgressModule } from 'ng-zorro-antd/progress';
@@ -938,11 +948,12 @@ describe('upload', () => {
         width = 1;
         height = 2;
 
-        onload(): void {}
-
-        set src(_: string) {
-          this.onload();
+        addEventListener(_name: string, callback: VoidFunction): void {
+          callback();
         }
+        removeEventListener(): void {}
+
+        set src(_: string) {}
       }
       it('should be generate thumb when is valid image data', fakeAsync(() => {
         spyOn(window as any, 'Image').and.returnValue(new MockImage());
@@ -998,7 +1009,20 @@ describe('upload', () => {
         fixture.detectChanges();
       });
 
-      describe('should be trigger upload', () => {
+      describe('should trigger upload', () => {
+        describe('change detection', () => {
+          it('should not run change detection when the <input type=file> is being clicked', () => {
+            const appRef = TestBed.inject(ApplicationRef);
+            spyOn(appRef, 'tick');
+            spyOn(instance.comp.file.nativeElement, 'click');
+            expect(instance.comp.file.nativeElement.click).not.toHaveBeenCalled();
+            fixture.debugElement.query(By.css('div')).nativeElement.click();
+            // Caretaker note: previously click events on the `nz-upload-btn` elements did trigger
+            // change detection since they were added via the `host` property.
+            expect(appRef.tick).toHaveBeenCalledTimes(0);
+            expect(instance.comp.file.nativeElement.click).toHaveBeenCalled();
+          });
+        });
         describe('via onClick', () => {
           it('', () => {
             spyOn(instance.comp.file.nativeElement, 'click');
@@ -1016,16 +1040,24 @@ describe('upload', () => {
         });
         describe('via onKeyDown', () => {
           it('normal', () => {
+            const appRef = TestBed.inject(ApplicationRef);
+            spyOn(appRef, 'tick');
             spyOn(instance.comp, 'onClick');
             expect(instance.comp.onClick).not.toHaveBeenCalled();
-            instance.comp.onKeyDown({ key: 'Enter' } as any);
+            const uploadBtn = fixture.debugElement.query(By.css('div')).nativeElement;
+            dispatchKeyboardEvent(uploadBtn, 'keydown', ENTER);
             expect(instance.comp.onClick).toHaveBeenCalled();
+            expect(appRef.tick).toHaveBeenCalledTimes(0);
           });
           it('when expect Enter', () => {
+            const appRef = TestBed.inject(ApplicationRef);
+            spyOn(appRef, 'tick');
             spyOn(instance.comp, 'onClick');
             expect(instance.comp.onClick).not.toHaveBeenCalled();
-            instance.comp.onKeyDown({ key: 'A' } as any);
+            const uploadBtn = fixture.debugElement.query(By.css('div')).nativeElement;
+            dispatchKeyboardEvent(uploadBtn, 'keydown', TAB);
             expect(instance.comp.onClick).not.toHaveBeenCalled();
+            expect(appRef.tick).toHaveBeenCalledTimes(0);
           });
         });
         describe('via Drop', () => {
@@ -1101,6 +1133,7 @@ describe('upload', () => {
           expect(instance.comp.uploadFiles).toHaveBeenCalled();
         });
         describe('via directory', () => {
+          // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
           const makeFileSystemEntry = (item: Item) => {
             const isDirectory = Array.isArray(item.children);
             const ret = {
@@ -1115,6 +1148,7 @@ describe('upload', () => {
             };
             return ret;
           };
+          // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
           const makeDataTransferItem = (item: Item) => ({ webkitGetAsEntry: () => makeFileSystemEntry(item) });
           beforeEach(() => (instance.options.directory = true));
           it('should working', () => {

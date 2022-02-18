@@ -34,7 +34,7 @@ import {
 import { InsertChange } from '@schematics/angular/utility/change';
 import { buildRelativePath, findModuleFromOptions } from '@schematics/angular/utility/find-module';
 import { parseName } from '@schematics/angular/utility/parse-name';
-import { validateHtmlSelector, validateName } from '@schematics/angular/utility/validation';
+import { validateHtmlSelector } from '@schematics/angular/utility/validation';
 import { getWorkspace } from '@schematics/angular/utility/workspace';
 import { ProjectType } from '@schematics/angular/utility/workspace-models';
 
@@ -251,7 +251,6 @@ export function buildComponent(options: ZorroComponentOptions,
     options.path = parsedPath.path;
     options.selector = options.selector || buildSelector(options, project.prefix, modulePrefix);
 
-    validateName(options.name);
     validateHtmlSelector(options.selector!);
 
     // In case the specified style extension is not part of the supported CSS supersets,
@@ -264,7 +263,7 @@ export function buildComponent(options: ZorroComponentOptions,
       options.style = Style.Css;
     }
 
-    const classifyCovered = (name: string) => {
+    const classifyCovered = (name: string): string => {
       return `${modulePrefix}${strings.classify(name)}`
     };
     // Object that will be used as context for the EJS templates.

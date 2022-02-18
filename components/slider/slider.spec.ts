@@ -339,7 +339,7 @@ describe('nz-slider', () => {
 
     // TODO: Pass this testing by increase precision
     xit('should round the value inside the label based on the provided step', () => {
-      const testStep = (step: number, expected: string) => {
+      const testStep = (step: number, expected: string): void => {
         fixture.componentInstance.step = step;
         fixture.detectChanges();
         dispatchSlideEventSequence(sliderNativeElement, 0, 0.333333);
@@ -916,6 +916,16 @@ describe('nz-slider', () => {
       fixture.detectChanges();
 
       expect(sliderInstance.value).toEqual([2, 99]);
+    });
+
+    it('should trigger nzOnAfterChange', () => {
+      const onChangeSpy = jasmine.createSpy('slider onChange');
+
+      sliderInstance.nzOnAfterChange.subscribe(onChangeSpy);
+      dispatchKeyboardEvent(sliderNativeElement, 'keydown', RIGHT_ARROW);
+      fixture.detectChanges();
+
+      expect(onChangeSpy).toHaveBeenCalledTimes(1);
     });
 
     it('should work for range slider when activeValueIndex is undefined', () => {

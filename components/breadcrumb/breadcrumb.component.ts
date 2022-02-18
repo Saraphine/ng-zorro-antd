@@ -11,7 +11,6 @@ import {
   ElementRef,
   Injector,
   Input,
-  NgZone,
   OnDestroy,
   OnInit,
   Optional,
@@ -27,6 +26,8 @@ import { PREFIX } from 'ng-zorro-antd/core/logger';
 import { BooleanInput } from 'ng-zorro-antd/core/types';
 import { InputBoolean } from 'ng-zorro-antd/core/util';
 
+import { NzBreadcrumb } from './breadcrumb';
+
 export interface BreadcrumbOption {
   label: string;
   params: Params;
@@ -39,6 +40,7 @@ export interface BreadcrumbOption {
   selector: 'nz-breadcrumb',
   exportAs: 'nzBreadcrumb',
   preserveWhitespaces: false,
+  providers: [{ provide: NzBreadcrumb, useExisting: NzBreadCrumbComponent }],
   template: `
     <ng-content></ng-content>
     <ng-container *ngIf="nzAutoGenerate && breadcrumbs.length">
@@ -48,7 +50,7 @@ export interface BreadcrumbOption {
     </ng-container>
   `
 })
-export class NzBreadCrumbComponent implements OnInit, OnDestroy {
+export class NzBreadCrumbComponent implements OnInit, OnDestroy, NzBreadcrumb {
   static ngAcceptInputType_nzAutoGenerate: BooleanInput;
 
   @Input() @InputBoolean() nzAutoGenerate = false;
@@ -63,7 +65,6 @@ export class NzBreadCrumbComponent implements OnInit, OnDestroy {
 
   constructor(
     private injector: Injector,
-    private ngZone: NgZone,
     private cdr: ChangeDetectorRef,
     private elementRef: ElementRef,
     private renderer: Renderer2,
@@ -94,8 +95,7 @@ export class NzBreadCrumbComponent implements OnInit, OnDestroy {
 
   navigate(url: string, e: MouseEvent): void {
     e.preventDefault();
-
-    this.ngZone.run(() => this.injector.get(Router).navigateByUrl(url).then()).then();
+    this.injector.get(Router).navigateByUrl(url);
   }
 
   private registerRouterChange(): void {

@@ -37,7 +37,7 @@ import { startWith, switchMap, takeUntil } from 'rxjs/operators';
 import { slideMotion } from 'ng-zorro-antd/core/animation';
 import { NzConfigKey, NzConfigService, WithConfig } from 'ng-zorro-antd/core/config';
 import { NzNoAnimationDirective } from 'ng-zorro-antd/core/no-animation';
-import { reqAnimFrame } from 'ng-zorro-antd/core/polyfill';
+import { cancelRequestAnimationFrame, reqAnimFrame } from 'ng-zorro-antd/core/polyfill';
 import { NzDestroyService } from 'ng-zorro-antd/core/services';
 import { BooleanInput, NzSafeAny, OnChangeType, OnTouchedType } from 'ng-zorro-antd/core/types';
 import { InputBoolean, isNotNil } from 'ng-zorro-antd/core/util';
@@ -149,6 +149,7 @@ export type NzSelectSizeType = 'large' | 'default' | 'small';
     </ng-template>
   `,
   host: {
+    class: 'ant-select',
     '[class.ant-select-lg]': 'nzSize === "large"',
     '[class.ant-select-sm]': 'nzSize === "small"',
     '[class.ant-select-show-arrow]': `nzShowArrow`,
@@ -242,6 +243,7 @@ export class NzSelectComponent implements ControlValueAccessor, OnInit, AfterCon
   private isReactiveDriven = false;
   private value: NzSafeAny | NzSafeAny[];
   private _nzShowArrow: boolean | undefined;
+  private requestId: number = -1;
   onChange: OnChangeType = () => {};
   onTouched: OnTouchedType = () => {};
   dropDownPosition: 'top' | 'center' | 'bottom' = 'bottom';
@@ -401,14 +403,14 @@ export class NzSelectComponent implements ControlValueAccessor, OnInit, AfterCon
     switch (e.keyCode) {
       case UP_ARROW:
         e.preventDefault();
-        if (this.nzOpen) {
+        if (this.nzOpen && listOfFilteredOptionNotDisabled.length > 0) {
           const preIndex = activatedIndex > 0 ? activatedIndex - 1 : listOfFilteredOptionNotDisabled.length - 1;
           this.activatedValue = listOfFilteredOptionNotDisabled[preIndex].nzValue;
         }
         break;
       case DOWN_ARROW:
         e.preventDefault();
-        if (this.nzOpen) {
+        if (this.nzOpen && listOfFilteredOptionNotDisabled.length > 0) {
           const nextIndex = activatedIndex < listOfFilteredOptionNotDisabled.length - 1 ? activatedIndex + 1 : 0;
           this.activatedValue = listOfFilteredOptionNotDisabled[nextIndex].nzValue;
         } else {
@@ -491,9 +493,18 @@ export class NzSelectComponent implements ControlValueAccessor, OnInit, AfterCon
 
   updateCdkConnectedOverlayStatus(): void {
     if (this.platform.isBrowser && this.originElement.nativeElement) {
-      reqAnimFrame(() => {
+      const triggerWidth = this.triggerWidth;
+      cancelRequestAnimationFrame(this.requestId);
+      this.requestId = reqAnimFrame(() => {
+        // Blink triggers style and layout pipelines anytime the `getBoundingClientRect()` is called, which may cause a
+        // frame drop. That's why it's scheduled through the `requestAnimationFrame` to unload the composite thread.
         this.triggerWidth = this.originElement.nativeElement.getBoundingClientRect().width;
-        this.cdr.markForCheck();
+        if (triggerWidth !== this.triggerWidth) {
+          // The `requestAnimationFrame` will trigger change detection, but we're inside an `OnPush` component which won't have
+          // the `ChecksEnabled` state. Calling `markForCheck()` will allow Angular to run the change detection from the root component
+          // down to the `nz-select`. But we'll trigger only local change detection if the `triggerWidth` has been changed.
+          this.cdr.detectChanges();
+        }
       });
     }
   }
@@ -513,10 +524,7 @@ export class NzSelectComponent implements ControlValueAccessor, OnInit, AfterCon
     private focusMonitor: FocusMonitor,
     @Optional() private directionality: Directionality,
     @Host() @Optional() public noAnimation?: NzNoAnimationDirective
-  ) {
-    // TODO: move to host after View Engine deprecation
-    this.elementRef.nativeElement.classList.add('ant-select');
-  }
+  ) {}
 
   writeValue(modelValue: NzSafeAny | NzSafeAny[]): void {
     /** https://github.com/angular/angular/issues/14988 **/
@@ -672,6 +680,7 @@ export class NzSelectComponent implements ControlValueAccessor, OnInit, AfterCon
     }
   }
   ngOnDestroy(): void {
+    cancelRequestAnimationFrame(this.requestId);
     this.focusMonitor.stopMonitoring(this.elementRef);
   }
 }

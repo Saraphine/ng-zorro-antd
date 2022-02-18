@@ -586,6 +586,17 @@ describe('NzTabSet', () => {
 
       expect(fixture.componentInstance.handleSelection).not.toHaveBeenCalled();
     }));
+
+    it('should show add btn after all tabs are removed', () => {
+      const component = fixture.debugElement.componentInstance;
+      component.closable = true;
+      component.type = 'editable-card';
+      fixture.detectChanges();
+      fixture.componentInstance.tabs.splice(0, component.tabs.length);
+      fixture.detectChanges();
+      const btnCount = fixture.debugElement.queryAll(By.css('.ant-tabs-nav-add')).length;
+      expect(btnCount).toBeGreaterThan(0);
+    });
   });
 
   describe('async tabs', () => {
@@ -987,7 +998,11 @@ class DisableTabsTestComponent {
 
 @Component({
   template: `
-    <nz-tabset [(nzSelectedIndex)]="selectedIndex" (nzSelectedIndexChange)="handleSelection($event)">
+    <nz-tabset
+      [(nzSelectedIndex)]="selectedIndex"
+      [nzType]="'editable-card'"
+      (nzSelectedIndexChange)="handleSelection($event)"
+    >
       <nz-tab *ngFor="let tab of tabs" [nzTitle]="tab.title">
         {{ tab.content }}
       </nz-tab>
@@ -1024,7 +1039,7 @@ class DynamicTabsTestComponent {
     </div>
   `,
   encapsulation: ViewEncapsulation.None,
-  styleUrls: ['../style/entry.less', './style/entry.less']
+  styleUrls: ['../ng-zorro-antd.less']
 })
 class ScrollableTabsTestComponent {
   selectedIndex = 0;
