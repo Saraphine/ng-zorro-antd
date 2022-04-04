@@ -172,7 +172,7 @@ export class NzCarouselComponent implements AfterContentInit, AfterViewInit, OnD
   constructor(
     elementRef: ElementRef,
     public readonly nzConfigService: NzConfigService,
-    private readonly ngZone: NgZone,
+    public readonly ngZone: NgZone,
     private readonly renderer: Renderer2,
     private readonly cdr: ChangeDetectorRef,
     private readonly platform: Platform,
@@ -308,7 +308,7 @@ export class NzCarouselComponent implements AfterContentInit, AfterViewInit, OnD
       this.nzBeforeChange.emit({ from, to });
       this.strategy!.switch(this.activeIndex, index).subscribe(() => {
         this.scheduleNextTransition();
-        this.nzAfterChange.emit(index);
+        this.nzAfterChange.emit(to);
         this.isTransiting = false;
       });
       this.markContentActive(to);
